@@ -1,0 +1,41 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=100
+#SBATCH --time=01:00:00
+#SBATCH -J pbl_ysu #job name
+#SBATCH --partition=spr
+#SBATCH --account=TG-EES240114
+##SBATCH --mem=250G
+#SBATCH --mail-type=ALL
+##SBATCH --mail-user=bkale@mit.edu
+##SBATCH -o /scratch/10143/bkale/output/output.%J
+##SBATCH -e /scratch/10143/bkale/output/error.%J
+
+cd $SLURM_SUBMIT_DIR
+
+source "export_libs_load_modules"
+
+MPIRUN=$(which mpirun)
+#export OPENMPI_ROOT=$(dirname ${MPIRUN} | sed -e 's_/bin__g')
+#MPI_OPTS="--map-by L3cache -x OMPI_MCA_memory_linux_disable=1 -x MALLOC_MMAP_MAX_=0 -x MALLOC_TRIM_THRESHOLD_=-1 --mca mpi_paffinity_alone 1 --mca pml ucx --mca btl ^vader,tcp,openib,sm,self"
+#MPI_OPTS="--map-by L3cache"
+#MPI_OPTS=""
+#echo INFO
+#ompi_info
+
+ibrun ./ideal.exe >& log.ideal
+wait
+ibrun ./wrf.exe >& log.wrf
+
+#srun hostname | sort > nodefile.$SLURM_JOBID
+
+# test
+#mpirun -np $SLURM_NTASKS $MPI_OPTS ./ideal.exe >& log.ideal
+#wait
+#mpirun -np $SLURM_NTASKS $MPI_OPTS ./wrf.exe >& log.wrf
+
+# test
+#mpirun -np $SLURM_NTASKS --oversubscribe ./ideal.exe >& log.ideal
+#wait
+#mpirun -np $SLURM_NTASKS --oversubscribe ./wrf.exe >& log.wrf
+

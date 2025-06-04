@@ -1,0 +1,11 @@
+#!/bin/bash -l
+
+( ln -s ../../main/wrf.exe . )
+( ln -s ../../main/ideal.exe . )
+( ln -s ../../run/README.namelist . )
+( ln -s ../../run/README.physics_files . )
+( ln -s ../../run/README.tslist . )
+
+echo -e "========================"
+echo -e "symbolic link completed."
+echo -e "========================"

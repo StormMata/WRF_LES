@@ -1,0 +1,136 @@
+#!/bin/bash
+
+LOGFILE="log"
+CONFARG="" # can be "-d" or "-D"
+NPROCS=""
+TESTCASE=""
+TESTCASES=("em_b_wave" "em_convrad" "em_esmf_exp" "em_fire" "em_grav2d_x" "em_heldsuarez" "em_hill2d_x" "em_les" "em_quarter_ss" "em_real" "em_scm_xy" "em_seabreeze2d_x" "em_squall2d_x" "em_squall2d_y" "em_tropical_cyclone")
+
+exit_abnormal()
+{ # Function: Exit with error.
+  usage
+  exit 0
+}
+
+usage()
+{ # Function: Print a help message.
+  echo -e "Usage: ./autoCompWRF [ -n | testcasename ] [ -p | numberofprocessors ]" 1>&2
+  echo -e "Usage: ./autoCompWRF -n em_les -p 16" 1>&2
+
+}
+
+while getopts ":n:p:" options; do
+  case "${options}" in                    #
+    n)                                    # If the option is n,
+      TESTCASE=${OPTARG}                  # set $TESTCASE to specified value.
+      if printf '%s\0' "${TESTCASES[@]}" | grep -Fxqz -- "${TESTCASE}"; then
+        :
+      else
+        echo -e "Only test cases '${TESTCASES[@]}' can be compiled with this script."
+        echo -e "Stopping."
+        exit_abnormal
+      fi
+      ;;
+    p)                                    # If the option is t,
+      NPROCS=${OPTARG}                    # Set $NPROCS to specified value.
+      re_isanum='^[0-9]+$'                # Regex: match whole numbers only
+      if ! [[ $NPROCS =~ $re_isanum ]] ; then   # if $NPROCS not whole:
+        echo -e "Error: NPROCS must be a positive, whole number."
+        exit_abnormal
+      elif [ $NPROCS -eq "0" ]; then      # If it's zero:
+        echo -e "Error: NPROCS must be greater than zero."
+        exit_abnormal                     # Exit abnormally.
+      elif [ $NPROCS -gt "20" ]; then     # If it's greater than 20:
+	echo -e "\nWarning: NPROCS cannot be greater than 20. Setting NPROCS to 2. \n"
+	NPROCS=2
+      fi
+      ;;
+    :)                                    # If expected argument omitted:
+      echo -e "Error: -${OPTARG} requires an argument."
+      exit_abnormal                       # Exit abnormally.
+      ;;
+    *)                                    # If unknown (any other) option:
+      exit_abnormal                       # Exit abnormally.
+      ;;
+  esac
+done
+
+if [[ -z ${TESTCASE} ]] || [[ -z ${NPROCS} ]]; then
+    exit_abnormal
+fi
+
+# export libs and load modules
+#source "export_libs"
+
+# export libs and load modules - precompiled libs only
+# uncomment if necessary
+#source "export_for_precompiled_libs"
+
+echo -e "Executing ./configure..."
+	./configure ${CONFARG}
+echo -e "Done. \n"
+
+echo -e "Parallel compilation has started using ${NPROCS} processor(s)... \n"
+        export J="-j ${NPROCS}"
+
+COMPILE_START=`date`
+
+echo "Executing './compile' command for '${TESTCASE}' case and creating '${LOGFILE}.${TESTCASE}' log file. Hereafter, recompilation will be done. This will take several minutes..."
+	./compile "${TESTCASE}" >& "${LOGFILE}.${TESTCASE}"
+echo -e "Done. \n"
+	sleep 0.5
+
+COMPILE_END=`date`
+
+echo -e "Recompiling '${TESTCASE}' case and creating '${LOGFILE}.${TESTCASE}' log file..."
+	sleep 0.5		
+	./compile "${TESTCASE}" >& "${LOGFILE}.${TESTCASE}"
+	wait
+
+RECOMPILE_END=`date`
+BUILD_TIME=`date -ud@$(($(date -ud"${COMPILE_END}" +%s)-$(date -ud"${COMPILE_START}" +%s))) +%T`
+
+echo -e " "
+echo -e "======================================================================================"
+echo -e "build started:     ${COMPILE_START}"
+echo -e "build completed:   ${COMPILE_END}"
+echo -e "rebuild completed: ${RECOMPILE_END}"
+echo -e "build time:        ${BUILD_TIME} [HH:MM:SS]"
+echo -e "======================================================================================"
+
+if [ "${TESTCASE}" != "em_real" ] && [ "${TESTCASE}" != "em_convrad" ]; then
+    if test -e main/wrf.exe -a -e main/ideal.exe ; then \
+        echo -e " " ; \
+        echo -e "--->                         Executables successfully built                       <---" ; \
+        echo -e " " ; \
+        ls -l main/*.exe ; \
+        echo -e " " ; \
+        echo -e "======================================================================================" ; \
+        echo -e " " ; \
+    else \
+        echo -e " " ; \
+        echo -e "---> Problems building executables, look for errors in the '${LOGFILE}.${TESTCASE}' log file  <---" ; \
+        echo -e " " ; \
+        echo -e "======================================================================================" ; \
+        echo -e " " ; \
+    fi
+elif [ "${TESTCASE}" == "em_convrad" ]; then
+    :
+else
+    if test -e main/wrf.exe -a -e main/real.exe -a -e main/ndown.exe -a -e main/tc.exe  ; then \
+        echo -e " " ; \
+        echo -e "--->                         Executables successfully built                       <---" ; \
+        echo -e " " ; \
+        ls -l main/*.exe ; \
+        echo -e " " ; \
+        echo -e "======================================================================================" ; \
+        echo -e " " ; \
+    else \
+        echo -e " " ; \
+        echo -e "---> Problems building executables, look for errors in the '${LOGFILE}.${TESTCASE}' log file  <---" ; \
+        echo -e " " ; \
+        echo -e "======================================================================================" ; \
+        echo -e " " ; \
+    fi
+fi
+
