@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --ntasks=112
-#SBATCH --time=00:30:00
+#SBATCH --time=01:30:00
 #SBATCH -J compile_WRF
 #SBATCH --account=TG-ATM170028
 #SBATCH --partition=spr

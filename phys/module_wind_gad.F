@@ -4394,7 +4394,8 @@ END SUBROUTINE interpolate
       dr(n) = ( rTip(n)-rHub(n) )/nElements
       dist = 0.0
       WRITE(0,*) TRIM( turbineNameVect( turbineTypeVect(n) ) )
-      WRITE(0,*) 'blade-element # ',' r/R     [-]',' chord     [m]',' thickness     [%]', ' twist     [deg]', '      airfoil #'
+!     WRITE(0,*) 'blade-element # ',' r/R     [-]',' chord     [m]',' thickness     [%]', ' twist     [deg]', '      airfoil #'
+      WRITE(0,'(A)') 'blade-element #   r/R [-]    chord [m]   thickness [%]   twist [deg]   airfoil #'
       DO e = 1, nElements
         dist = dist + 0.5*dr(n)
         bladeRadius(n, e) = rHub(n) + dist
@@ -4404,7 +4405,9 @@ END SUBROUTINE interpolate
         CALL interpolate( trbDataVectLen(n), bladeRadius(n, e), rVect(n, :), thetaGVect(n, :), thetaS(n, e) )
         CALL interpolate( trbDataVectLen(n), bladeRadius(n, e), rVect(n, :), foilTypeVectREAL(n, :), foilTypeREAL(n, e) )
         foilType(n, e) = MIN( MAX( 1, NINT( foilTypeREAL(n, e) ) ), nFoilTypes(n) )
-        WRITE(0,*) e, bladeRadius(n, e)/(rotorDiameter(n)/2), c(n, e), t(n, e), thetaS(n, e), foilType(n, e)
+!        WRITE(0,*) e, bladeRadius(n, e)/(rotorDiameter(n)/2), c(n, e), t(n, e), thetaS(n, e), foilType(n, e)
+        WRITE(0,'(I14,2X,F9.6,3X,F10.6,3X,F13.6,3X,F12.6,3X,I8)') &
+        e, bladeRadius(n,e)/(rotorDiameter(n)/2), c(n,e), t(n,e), thetaS(n,e), foilType(n,e)
       ENDDO
     ENDDO
 #ifdef DM_PARALLEL
